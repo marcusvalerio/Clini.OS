@@ -165,3 +165,32 @@ td strong,td small{display:block}td strong{font-size:11px;color:#323a33;font-wei
   .agenda-line-dot:after{height:85px;}
   .demo-lower-grid{grid-template-columns:minmax(0,1fr);}
 }
+
+
+/* Agenda operacional: itens reais do banco e controles compactos */
+.form-two-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.agenda-real-list{display:grid;margin-top:10px}
+.agenda-real-item{display:grid;grid-template-columns:68px minmax(0,1fr);gap:15px;padding:17px 0;border-bottom:1px solid #edf0eb}
+.agenda-real-item:last-child{border-bottom:0}
+.agenda-real-time{display:flex;flex-direction:column;gap:5px}
+.agenda-real-time strong{font-size:13px;color:#303a31}
+.agenda-real-time span{font-size:10px;color:#9aa299}
+.agenda-real-time small{font-size:10px;color:#738274;margin-top:3px}
+.agenda-real-main{min-width:0}
+.agenda-real-main>strong{font-size:12px;color:#303a31}
+.agenda-real-main>p{font-size:11px;color:#737d74;margin:6px 0}
+.agenda-real-main>small{display:block;font-size:10px;line-height:1.5;color:#8a938a;margin:7px 0}
+.agenda-real-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}
+.agenda-confirmed{background:#edf4ed;color:#4c7656}
+.agenda-done{background:#e8f0f7;color:#466b8a}
+.agenda-status-form{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.agenda-status-form select{max-width:180px;border:1px solid #dfe5de;border-radius:9px;background:#fff;padding:8px 9px;color:#566157;font-size:10px}
+.agenda-status-form .secondary-button{min-height:34px;padding:0 10px;font-size:10px}
+@media(max-width:720px){
+ .form-two-columns{gap:9px}
+ .agenda-real-item{grid-template-columns:49px minmax(0,1fr);gap:10px;padding:14px 0}
+ .agenda-real-time strong{font-size:12px}
+ .agenda-real-actions{align-items:flex-start;flex-direction:column}
+ .agenda-status-form{width:100%}
+ .agenda-status-form select{flex:1;min-width:0;max-width:none}
+}
