@@ -1,7 +1,6 @@
-import { auth } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  if (!auth) redirect("/setup");
-  redirect("/dashboard");
+  // Public read-only preview with fictional data. Operational dashboard remains authenticated.
+  redirect("/demo");
 }
