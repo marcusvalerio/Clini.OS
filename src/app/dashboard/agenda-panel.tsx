@@ -2,14 +2,14 @@ import { getSql } from "@/lib/db";
 import { createAppointment, createService, updateAppointmentStatus } from "@/app/actions";
 import { ArrowUpRight, CalendarDays, ClipboardList, Plus, ShieldCheck } from "lucide-react";
 
-type Props = { organizationId: string; role: string };
+type Props = { organizationId: string; membershipId: string; role: string };
 
-export default async function AgendaPanel({ organizationId, role }: Props) {
+export default async function AgendaPanel({ organizationId, membershipId, role }: Props) {
   const sql = getSql();
   const [beneficiaries, services, profiles, appointments] = await Promise.all([
     sql`SELECT id, record_number, full_name FROM beneficiaries WHERE organization_id = ${organizationId} AND administrative_status = 'active' ORDER BY full_name ASC LIMIT 200`,
     sql`SELECT id, name, description, duration_minutes FROM services WHERE organization_id = ${organizationId} AND is_active = true ORDER BY name ASC`,
-    sql`SELECT id, display_name, professional_category FROM professional_profiles WHERE organization_id = ${organizationId} AND is_active = true ORDER BY display_name ASC`,
+    sql`SELECT id, display_name, professional_category FROM professional_profiles WHERE organization_id = ${organizationId} AND is_active = true AND (${role} <> 'professional' OR membership_id = ${membershipId}) ORDER BY display_name ASC`,
     sql`SELECT a.id, a.starts_at, a.ends_at, a.status, a.client_note, b.full_name AS beneficiary_name, s.name AS service_name, p.display_name AS professional_name
         FROM appointments a
         JOIN beneficiaries b ON b.id = a.beneficiary_id AND b.organization_id = a.organization_id
