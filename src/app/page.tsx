@@ -1,5 +1,7 @@
+import { auth } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  redirect("/demo");
+  if (!auth) redirect("/setup");
+  redirect("/dashboard");
 }
