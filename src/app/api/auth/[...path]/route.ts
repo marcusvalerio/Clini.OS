@@ -10,12 +10,14 @@ function unavailable() {
   );
 }
 
-export async function GET(request: Request) {
+export async function GET(request: Request, context: { params: Promise<{ path: string[] }> }) {
   if (!auth) return unavailable();
-  return auth.handler().GET(request);
+  const handlers = auth.handler();
+  return handlers.GET(request, context);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: Request, context: { params: Promise<{ path: string[] }> }) {
   if (!auth) return unavailable();
-  return auth.handler().POST(request);
+  const handlers = auth.handler();
+  return handlers.POST(request, context);
 }
