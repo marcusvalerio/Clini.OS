@@ -7,6 +7,7 @@ import {
   HeartHandshake, LayoutDashboard, LogOut, Plus, ShieldCheck, Users, Wallet
 } from "lucide-react";
 import { createBeneficiary, createFollowUp, createOrganization, createProfessionalProfile } from "@/app/actions";
+import AgendaPanel from "./agenda-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,15 @@ const notices: Record<string, string> = {
   "followup-invalid": "Selecione um beneficiário e escreva um registro válido.",
   "profile-required": "Antes de registrar um acompanhamento, configure seu perfil profissional.",
   "beneficiary-not-found": "O beneficiário selecionado não está disponível.",
-  "access-denied": "Seu perfil não tem permissão para esta ação."
+  "access-denied": "Seu perfil não tem permissão para esta ação.",
+  "service-invalid": "Confira o nome e a duração do serviço.",
+  "service-exists": "Já existe um serviço ativo com esse nome.",
+  "service-created": "Serviço cadastrado com sucesso.",
+  "appointment-invalid": "Confira os dados do compromisso e tente novamente.",
+  "appointment-created": "Compromisso cadastrado na agenda.",
+  "appointment-overlap": "Esse profissional já possui um compromisso nesse horário.",
+  "appointment-not-found": "O compromisso não foi encontrado nesta organização.",
+  "appointment-updated": "Status do compromisso atualizado."
 };
 
 function SectionTitle({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
@@ -151,11 +160,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
               {canWriteFollowups && profile && beneficiaryRows.length > 0 && <details className="inline-create"><summary><Plus size={16} /> Registrar acompanhamento</summary><form action={createFollowUp} className="stack-form"><label>Beneficiário<select name="beneficiary_id" required defaultValue=""><option value="" disabled>Selecione uma pessoa</option>{beneficiaryRows.map((item) => <option key={String(item.id)} value={String(item.id)}>{String(item.full_name)}</option>)}</select></label><label>Tipo de registro<select name="note_type" defaultValue="progress"><option value="progress">Evolução</option><option value="observation">Observação</option><option value="referral">Encaminhamento</option><option value="plan">Plano de acompanhamento</option><option value="other">Outro</option></select></label><label>Registro<textarea name="summary" rows={4} required minLength={3} maxLength={5000} placeholder="Registre um resumo objetivo do acompanhamento." /></label><button className="primary-button" type="submit">Salvar registro <ArrowUpRight size={16} /></button></form></details>}
               {encounterRows.length ? <div className="timeline">{encounterRows.map((item) => <article className="timeline-item" key={String(item.id)}><span className="timeline-dot" /><div><div className="timeline-heading"><strong>{String(item.beneficiary_name)}</strong><time>{new Date(String(item.created_at)).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</time></div><p>{String(item.professional_name)} · {String(item.note_type || "registro")}</p><div className="note-preview">{String(item.content || "Acompanhamento registrado.")}</div></div></article>)}</div> : <div className="empty-state compact-empty"><span className="empty-icon"><HeartHandshake size={20} /></span><strong>O histórico começa aqui</strong><p>Depois de configurar seu perfil profissional e cadastrar uma pessoa, você poderá registrar um acompanhamento.</p></div>}
             </section>
-            <section className="surface data-panel" id="rotina">
-              <SectionTitle eyebrow="ROTINA DA ORGANIZAÇÃO" title="Agenda e atividades" description="Estrutura preparada para as próximas etapas." />
-              <div className="feature-list"><div><span className="feature-icon"><CalendarDays size={17} /></span><div><strong>Agenda de compromissos</strong><p>Cadastro e organização de atividades.</p></div><span className="coming-chip">Próxima etapa</span></div><div id="documentos"><span className="feature-icon"><FileText size={17} /></span><div><strong>Documentos institucionais</strong><p>Preparação para armazenamento privado.</p></div><span className="coming-chip">Próxima etapa</span></div><div><span className="feature-icon"><Wallet size={17} /></span><div><strong>Indicadores administrativos</strong><p>Contagens reais a partir do banco conectado.</p></div><span className="coming-chip">Inicial</span></div></div>
-              <div className="product-principle"><CheckCircle2 size={18} /><div><strong>Sem métricas inventadas</strong><p>Os indicadores desta tela vêm do banco de dados. Áreas ainda não implementadas aparecem como próximas etapas.</p></div></div>
-            </section>
+            <AgendaPanel organizationId={membership.organization_id} membershipId={membership.membership_id} role={membership.role} />
           </div>
           <footer className="app-footer"><span>Clini.OS · Gestão para organizações sociais</span><span>Ambiente MVP · não utilizar dados reais sensíveis</span></footer>
         </div>
