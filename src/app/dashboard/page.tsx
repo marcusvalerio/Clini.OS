@@ -81,9 +81,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
     );
   }
 
-  const [beneficiaryRows, encounterRows, profileRows, countsRows] = await Promise.all([
+  const [beneficiaryRows, profileRows, countsRows] = await Promise.all([
     sql`SELECT id, record_number, full_name, birth_date, administrative_status, created_at FROM beneficiaries WHERE organization_id = ${membership.organization_id} AND administrative_status <> 'archived' ORDER BY created_at DESC LIMIT 12`,
-    sql`SELECT e.id, e.created_at, b.full_name AS beneficiary_name, p.display_name AS professional_name, n.content, n.note_type FROM encounters e JOIN beneficiaries b ON b.id = e.beneficiary_id AND b.organization_id = e.organization_id JOIN professional_profiles p ON p.id = e.professional_profile_id AND p.organization_id = e.organization_id LEFT JOIN clinical_notes n ON n.encounter_id = e.id AND n.organization_id = e.organization_id WHERE e.organization_id = ${membership.organization_id} ORDER BY e.created_at DESC LIMIT 5`,
     sql`SELECT id, display_name, professional_category FROM professional_profiles WHERE organization_id = ${membership.organization_id} AND membership_id = ${membership.membership_id} AND is_active = true LIMIT 1`,
     sql`SELECT (SELECT count(*)::int FROM beneficiaries WHERE organization_id = ${membership.organization_id} AND administrative_status = 'active') AS beneficiaries, (SELECT count(*)::int FROM encounters WHERE organization_id = ${membership.organization_id}) AS followups, (SELECT count(*)::int FROM services WHERE organization_id = ${membership.organization_id} AND is_active = true) AS services`
   ]);
@@ -91,6 +90,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const canManage = ["org_owner", "org_admin", "coordinator", "reception"].includes(membership.role);
   const canWriteFollowups = ["org_owner", "org_admin", "coordinator", "professional"].includes(membership.role);
   const profile = profileRows[0] as { id: string; display_name: string; professional_category: string } | undefined;
+  const canViewFollowups = ["coordinator", "professional"].includes(membership.role) || (Boolean(profile) && ["org_owner", "org_admin"].includes(membership.role));
+  const encounterRows = canViewFollowups ? await sql`
+    SELECT e.id, e.created_at, b.full_name AS beneficiary_name, p.display_name AS professional_name, n.content, n.note_type
+    FROM encounters e
+    JOIN beneficiaries b ON b.id = e.beneficiary_id AND b.organization_id = e.organization_id
+    JOIN professional_profiles p ON p.id = e.professional_profile_id AND p.organization_id = e.organization_id
+    LEFT JOIN clinical_notes n ON n.encounter_id = e.id AND n.organization_id = e.organization_id
+    WHERE e.organization_id = ${membership.organization_id}
+    ORDER BY e.created_at DESC LIMIT 5
+  ` : [];
+
 
   return (
     <main className="app-shell">

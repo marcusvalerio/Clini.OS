@@ -98,7 +98,7 @@ export async function createBeneficiary(formData: FormData) {
 export async function createProfessionalProfile(formData: FormData) {
   const user = await requireUser();
   const membership = await getMembership(user);
-  if (!membership || !["org_owner", "org_admin", "coordinator"].includes(membership.role)) redirect("/dashboard?notice=access-denied");
+  if (!membership || !["org_owner", "org_admin", "coordinator", "professional"].includes(membership.role)) redirect("/dashboard?notice=access-denied");
   const displayName = String(formData.get("display_name") || "").trim().slice(0, 120);
   const category = String(formData.get("professional_category") || "").trim().slice(0, 100);
   if (displayName.length < 2 || category.length < 2) redirect("/dashboard?notice=profile-invalid");
