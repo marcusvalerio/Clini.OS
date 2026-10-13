@@ -151,3 +151,135 @@ export async function createFollowUp(formData: FormData) {
   revalidatePath("/dashboard");
   redirect("/dashboard?notice=followup-created");
 }
+
+
+export async function createService(formData: FormData) {
+  const user = await requireUser();
+  const membership = await getMembership(user);
+  if (!membership || !["org_owner", "org_admin", "coordinator"].includes(membership.role)) {
+    redirect("/dashboard?notice=access-denied");
+  }
+
+  const name = String(formData.get("name") || "").trim().slice(0, 120);
+  const description = String(formData.get("description") || "").trim().slice(0, 500);
+  const duration = Number(formData.get("duration_minutes") || 30);
+  if (name.length < 2 || !Number.isInteger(duration) || duration < 5 || duration > 480) {
+    redirect("/dashboard?notice=service-invalid");
+  }
+
+  const sql = getSql();
+  const existing = await sql`
+    SELECT id FROM services
+    WHERE organization_id = ${membership.organization_id} AND lower(name) = lower(${name}) AND is_active = true
+    LIMIT 1
+  `;
+  if (existing[0]) redirect("/dashboard?notice=service-exists");
+
+  const rows = await sql`
+    INSERT INTO services (organization_id, name, description, duration_minutes)
+    VALUES (${membership.organization_id}, ${name}, ${description || null}, ${duration})
+    RETURNING id
+  `;
+  await sql`
+    INSERT INTO audit_logs (organization_id, actor_membership_id, action, resource_type, resource_id)
+    VALUES (${membership.organization_id}, ${membership.membership_id}, 'service.created', 'service', ${String(rows[0].id)})
+  `;
+  revalidatePath("/dashboard");
+  redirect("/dashboard?notice=service-created");
+}
+
+export async function createAppointment(formData: FormData) {
+  const user = await requireUser();
+  const membership = await getMembership(user);
+  if (!membership || !["org_owner", "org_admin", "coordinator", "reception", "professional"].includes(membership.role)) {
+    redirect("/dashboard?notice=access-denied");
+  }
+
+  const beneficiaryId = String(formData.get("beneficiary_id") || "");
+  const serviceId = String(formData.get("service_id") || "");
+  const profileId = String(formData.get("professional_profile_id") || "");
+  const date = String(formData.get("appointment_date") || "");
+  const start = String(formData.get("starts_at") || "");
+  const end = String(formData.get("ends_at") || "");
+  const note = String(formData.get("client_note") || "").trim().slice(0, 500);
+
+  if (![beneficiaryId, serviceId, profileId].every((id) => /^[0-9a-f-]{36}$/i.test(id)) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(start) ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(end) || end <= start) {
+    redirect("/dashboard?notice=appointment-invalid");
+  }
+
+  const sql = getSql();
+  const [beneficiaries, services, profiles] = await Promise.all([
+    sql`SELECT id FROM beneficiaries WHERE id = ${beneficiaryId} AND organization_id = ${membership.organization_id} AND administrative_status = 'active' LIMIT 1`,
+    sql`SELECT id FROM services WHERE id = ${serviceId} AND organization_id = ${membership.organization_id} AND is_active = true LIMIT 1`,
+    sql`SELECT id FROM professional_profiles WHERE id = ${profileId} AND organization_id = ${membership.organization_id} AND is_active = true LIMIT 1`
+  ]);
+  if (!beneficiaries[0]) redirect("/dashboard?notice=beneficiary-not-found");
+  if (!services[0] || !profiles[0]) redirect("/dashboard?notice=appointment-invalid");
+
+  const overlaps = await sql`
+    SELECT id FROM appointments
+    WHERE organization_id = ${membership.organization_id}
+      AND professional_profile_id = ${profileId}
+      AND status IN ('requested', 'confirmed', 'checked_in')
+      AND starts_at < ((${date}::date + ${end}::time) AT TIME ZONE 'America/Sao_Paulo')
+      AND ends_at > ((${date}::date + ${start}::time) AT TIME ZONE 'America/Sao_Paulo')
+    LIMIT 1
+  `;
+  if (overlaps[0]) redirect("/dashboard?notice=appointment-overlap");
+
+  const rows = await sql`
+    INSERT INTO appointments (
+      organization_id, beneficiary_id, service_id, professional_profile_id,
+      starts_at, ends_at, status, client_note, created_by_membership_id
+    )
+    VALUES (
+      ${membership.organization_id}, ${beneficiaryId}, ${serviceId}, ${profileId},
+      ((${date}::date + ${start}::time) AT TIME ZONE 'America/Sao_Paulo'),
+      ((${date}::date + ${end}::time) AT TIME ZONE 'America/Sao_Paulo'),
+      'requested', ${note || null}, ${membership.membership_id}
+    )
+    RETURNING id
+  `;
+  await sql`
+    INSERT INTO audit_logs (organization_id, actor_membership_id, action, resource_type, resource_id)
+    VALUES (${membership.organization_id}, ${membership.membership_id}, 'appointment.created', 'appointment', ${String(rows[0].id)})
+  `;
+  revalidatePath("/dashboard");
+  redirect("/dashboard?notice=appointment-created");
+}
+
+export async function updateAppointmentStatus(formData: FormData) {
+  const user = await requireUser();
+  const membership = await getMembership(user);
+  if (!membership || !["org_owner", "org_admin", "coordinator", "reception", "professional"].includes(membership.role)) {
+    redirect("/dashboard?notice=access-denied");
+  }
+
+  const appointmentId = String(formData.get("appointment_id") || "");
+  const status = String(formData.get("status") || "");
+  const allowedStatuses = ["requested", "confirmed", "checked_in", "completed", "cancelled", "no_show"];
+  if (!/^[0-9a-f-]{36}$/i.test(appointmentId) || !allowedStatuses.includes(status)) {
+    redirect("/dashboard?notice=appointment-invalid");
+  }
+
+  const sql = getSql();
+  const rows = await sql`
+    UPDATE appointments
+    SET status = ${status}::appointment_status,
+        cancelled_at = CASE WHEN ${status} = 'cancelled' THEN now() ELSE NULL END,
+        updated_at = now()
+    WHERE id = ${appointmentId} AND organization_id = ${membership.organization_id}
+    RETURNING id
+  `;
+  if (!rows[0]) redirect("/dashboard?notice=appointment-not-found");
+
+  await sql`
+    INSERT INTO audit_logs (organization_id, actor_membership_id, action, resource_type, resource_id, metadata)
+    VALUES (${membership.organization_id}, ${membership.membership_id}, 'appointment.status_updated', 'appointment', ${appointmentId}, jsonb_build_object('status', ${status}))
+  `;
+  revalidatePath("/dashboard");
+  redirect("/dashboard?notice=appointment-updated");
+}
