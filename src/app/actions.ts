@@ -64,14 +64,29 @@ export async function createBeneficiary(formData: FormData) {
   }
   const name = String(formData.get("full_name") || "").trim().slice(0, 160);
   const birthDateRaw = String(formData.get("birth_date") || "").trim();
+  const guardianName = String(formData.get("guardian_name") || "").trim().slice(0, 160);
+  const guardianPhone = String(formData.get("guardian_phone") || "").trim().slice(0, 40);
+  const relationship = String(formData.get("relationship") || "responsável").trim().slice(0, 60);
   if (name.length < 2) redirect("/dashboard?notice=beneficiary-invalid");
   const birthDate = /^\d{4}-\d{2}-\d{2}$/.test(birthDateRaw) ? birthDateRaw : null;
   const recordNumber = "CL-" + crypto.randomUUID().slice(0, 8).toUpperCase();
   const sql = getSql();
-  await sql`
+  const beneficiaryRows = await sql`
     INSERT INTO beneficiaries (organization_id, record_number, full_name, birth_date, created_by_membership_id)
     VALUES (${membership.organization_id}, ${recordNumber}, ${name}, ${birthDate}, ${membership.membership_id})
+    RETURNING id
   `;
+  if (guardianName.length > 1) {
+    const guardianRows = await sql`
+      INSERT INTO guardians (organization_id, full_name, phone)
+      VALUES (${membership.organization_id}, ${guardianName}, ${guardianPhone || null})
+      RETURNING id
+    `;
+    await sql`
+      INSERT INTO beneficiary_guardians (organization_id, beneficiary_id, guardian_id, relationship, is_primary_contact)
+      VALUES (${membership.organization_id}, ${String(beneficiaryRows[0].id)}, ${String(guardianRows[0].id)}, ${relationship || "responsável"}, true)
+    `;
+  }
   await sql`
     INSERT INTO audit_logs (organization_id, actor_membership_id, action, resource_type, metadata)
     VALUES (${membership.organization_id}, ${membership.membership_id}, 'beneficiary.created', 'beneficiary', jsonb_build_object('record_number', ${recordNumber}))

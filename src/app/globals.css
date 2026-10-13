@@ -71,7 +71,7 @@ h1,h2,h3,p{margin-top:0}
 .stack-form input,.stack-form select,.stack-form textarea{width:100%;border:1px solid #dfe5de;border-radius:10px;background:#fff;padding:11px 12px;color:#2d352e;font-size:12px;outline:none}
 .stack-form textarea{resize:vertical;line-height:1.6}
 .stack-form input:focus,.stack-form select:focus,.stack-form textarea:focus{border-color:#8dad94;box-shadow:0 0 0 3px rgba(80,122,99,.1)}
-.optional-label{font-weight:400;color:#98a098}
+.optional-label{font-weight:400;color:#98a098}.form-divider{display:flex;align-items:center;gap:8px;padding-top:6px;border-top:1px solid #edf0eb;font-size:10px;font-weight:750;color:#5b655c}.form-divider span{font-size:9px;font-weight:400;color:#98a098}
 .primary-button,.secondary-button{min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:11px;padding:0 15px;font-size:12px;font-weight:700;transition:background .15s,transform .15s}
 .primary-button{background:var(--green-dark);color:white}.primary-button:hover{background:#264a34;transform:translateY(-1px)}
 .secondary-button{background:#eaf2e9;color:#315741}.secondary-button:hover{background:#dfeade}
