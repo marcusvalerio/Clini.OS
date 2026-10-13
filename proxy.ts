@@ -1,12 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   if (!auth) {
     return NextResponse.redirect(new URL("/setup", request.url));
   }
-  const result = await auth.middleware({ loginUrl: "/auth/sign-in" })(request);
-  return result;
+  return auth.middleware({ loginUrl: "/auth/sign-in" })(request);
 }
 
 export const config = {
