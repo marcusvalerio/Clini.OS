@@ -214,7 +214,7 @@ export async function createAppointment(formData: FormData) {
   const [beneficiaries, services, profiles] = await Promise.all([
     sql`SELECT id FROM beneficiaries WHERE id = ${beneficiaryId} AND organization_id = ${membership.organization_id} AND administrative_status = 'active' LIMIT 1`,
     sql`SELECT id FROM services WHERE id = ${serviceId} AND organization_id = ${membership.organization_id} AND is_active = true LIMIT 1`,
-    sql`SELECT id FROM professional_profiles WHERE id = ${profileId} AND organization_id = ${membership.organization_id} AND is_active = true LIMIT 1`
+    sql`SELECT id FROM professional_profiles WHERE id = ${profileId} AND organization_id = ${membership.organization_id} AND is_active = true AND (${membership.role} <> 'professional' OR membership_id = ${membership.membership_id}) LIMIT 1`
   ]);
   if (!beneficiaries[0]) redirect("/dashboard?notice=beneficiary-not-found");
   if (!services[0] || !profiles[0]) redirect("/dashboard?notice=appointment-invalid");
@@ -272,6 +272,13 @@ export async function updateAppointmentStatus(formData: FormData) {
         cancelled_at = CASE WHEN ${status} = 'cancelled' THEN now() ELSE NULL END,
         updated_at = now()
     WHERE id = ${appointmentId} AND organization_id = ${membership.organization_id}
+      AND (${membership.role} <> 'professional' OR EXISTS (
+        SELECT 1 FROM professional_profiles p
+        WHERE p.id = appointments.professional_profile_id
+          AND p.organization_id = appointments.organization_id
+          AND p.membership_id = ${membership.membership_id}
+          AND p.is_active = true
+      ))
     RETURNING id
   `;
   if (!rows[0]) redirect("/dashboard?notice=appointment-not-found");
