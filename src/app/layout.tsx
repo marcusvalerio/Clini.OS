@@ -1,14 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: {
-    default: "Clini.OS — Gestão de cuidado",
-    template: "%s | Clini.OS"
-  },
-  description:
-    "Gestão integrada de beneficiários, documentos, atendimentos e agenda para organizações sociais."
+  title: { default: "Clini.OS — Gestão de cuidado", template: "%s | Clini.OS" },
+  description: "Gestão integrada de beneficiários, acompanhamento profissional e rotinas administrativas para organizações sociais."
 };
 
 export const viewport: Viewport = {
@@ -17,14 +14,10 @@ export const viewport: Viewport = {
   initialScale: 1
 };
 
-export default function RootLayout({
-  children
-}: Readonly<{
-  children: ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body><Providers>{children}</Providers></body>
     </html>
   );
 }

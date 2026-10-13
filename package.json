@@ -1,6 +1,6 @@
 {
   "name": "clini-os",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@neondatabase/auth": "^0.6.0-beta",
+    "@neondatabase/auth-ui": "^0.3.0-beta",
     "@neondatabase/serverless": "^1.0.2",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
