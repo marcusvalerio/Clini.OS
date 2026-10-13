@@ -1,37 +1,32 @@
 # Neon PostgreSQL setup
 
-Neon is the intended PostgreSQL provider for Clini.OS. The repository is prepared for it, but no database is considered provisioned until a Neon project exists and its connection is verified.
-
-## Project setup
-1. Create a Neon project named `clini-os` in the Neon console (choose the region closest to the app's deployment and expected users).
-2. Keep development and production separated. Start with development only; do not connect production beneficiary data during foundation work.
-3. Create a development branch for schema experimentation if available on the selected plan.
-4. Obtain the pooled connection string for the application and the direct connection string for migration tooling, if the plan/provider setup supplies both.
-5. Store secrets in local `.env.local` and in the deployment provider's encrypted environment-variable settings. Never commit secrets.
+O projeto Neon `clini-os` foi provisionado em `aws-sa-east-1` (São Paulo). A branch `dev` contém o esquema inicial e o Neon Auth; use-a para testes de MVP. A branch principal do banco permanece sem as migrations aplicadas.
 
 ## Environment variables
-- `DATABASE_URL`: pooled Neon connection string for serverless application queries.
-- `DIRECT_URL`: direct connection string reserved for migration tooling if required by the chosen migration runner.
-- `APP_URL`: application base URL.
+- `DATABASE_URL`: pooled Neon connection string da branch `dev`, guardada como segredo.
+- `NEON_AUTH_BASE_URL`: URL do Neon Auth correspondente à branch `dev`.
+- `NEXT_PUBLIC_NEON_AUTH_URL`: a mesma URL pública do Neon Auth.
+- `NEON_AUTH_COOKIE_SECRET`: segredo aleatório com pelo menos 32 caracteres.
+- `APP_URL`: URL da aplicação.
 
-The current application helper reads `DATABASE_URL` only. Add `DIRECT_URL` to tooling only when a migration runner is selected and configured. Do not expose either value to browser code.
+Copie `.env.example` para `.env.local`. Nunca commite a conexão PostgreSQL nem o segredo de cookies. No Vercel, cadastre as mesmas variáveis nos ambientes Preview e Development. Não use a branch `dev` para produção.
 
-## Apply migrations
-Review SQL files in lexical order:
+## Migrations aplicadas em dev
 1. `db/migrations/0001_initial_schema.sql`
-2. `db/migrations/0002_appointment_overlap_guard.sql)
+2. `db/migrations/0002_appointment_overlap_guard.sql`
 
-Apply them first to a disposable development database using the Neon SQL Editor or a configured migration runner. Verify the migration result and constraints before connecting application routes.
+A aplicação foi verificada com as tabelas esperadas no schema `public`. Registre futuras migrations em arquivos SQL novos e aplique-as primeiro em uma branch de desenvolvimento.
 
-## Before using real beneficiary data
-The initial SQL is a schema proposal, not a production security boundary. Complete and test:
-- authentication and server-side session verification;
-- organization membership and role authorization on every read/write;
-- database tenant isolation strategy (including RLS or equivalently enforced, tested access boundaries);
-- private document storage and signed access;
-- audit logging for reads/changes to sensitive records;
-- backup and restore checks;
-- retention/deletion, consent, and privacy workflows;
-- deployment secrets and environment separation.
+## Antes de dados reais
+Esta versão é um MVP técnico para testes com dados fictícios. Antes de dados pessoais reais, concluir e testar:
+- autenticação e sessão no servidor;
+- autorização por organização e função em todas as leituras e gravações;
+- isolamento de tenant no banco, incluindo RLS ou uma fronteira equivalente revisada;
+- permissões por tipo de registro profissional;
+- armazenamento privado de documentos e URLs assinadas;
+- auditoria de leitura e alteração de registros sensíveis;
+- backups e restauração;
+- consentimento, retenção, exclusão e revisão LGPD;
+- configuração de domínio confiável no Neon Auth para o domínio final do deploy.
 
-Do not store real personal data until these controls have passed review.
+Não cadastrar dados pessoais reais até a conclusão dessa revisão.
