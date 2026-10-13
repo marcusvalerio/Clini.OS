@@ -2,9 +2,9 @@ import { getSql } from "@/lib/db";
 import { createAppointment, createService, updateAppointmentStatus } from "@/app/actions";
 import { ArrowUpRight, CalendarDays, ClipboardList, Plus, ShieldCheck } from "lucide-react";
 
-type Props = { organizationId: string; membershipId: string; role: string };
+type Props = { organizationId: string; role: string };
 
-export default async function AgendaPanel({ organizationId, membershipId, role }: Props) {
+export default async function AgendaPanel({ organizationId, role }: Props) {
   const sql = getSql();
   const [beneficiaries, services, profiles, appointments] = await Promise.all([
     sql`SELECT id, record_number, full_name FROM beneficiaries WHERE organization_id = ${organizationId} AND administrative_status = 'active' ORDER BY full_name ASC LIMIT 200`,
