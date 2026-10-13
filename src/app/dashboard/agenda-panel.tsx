@@ -5,6 +5,10 @@ import { ArrowUpRight, CalendarDays, ClipboardList, Plus, ShieldCheck } from "lu
 type Props = { organizationId: string; membershipId: string; role: string };
 
 export default async function AgendaPanel({ organizationId, membershipId, role }: Props) {
+  if (!["org_owner", "org_admin", "coordinator", "reception", "professional"].includes(role)) {
+    return <section className="surface data-panel" id="rotina"><div className="section-heading"><div><p className="eyebrow">ROTINA DA ORGANIZAÇÃO</p><h2>Agenda de compromissos</h2><p>Seu perfil não tem permissão para visualizar a agenda.</p></div></div></section>;
+  }
+
   const sql = getSql();
   const [beneficiaries, services, profiles, appointments] = await Promise.all([
     sql`SELECT id, record_number, full_name FROM beneficiaries WHERE organization_id = ${organizationId} AND administrative_status = 'active' ORDER BY full_name ASC LIMIT 200`,
@@ -19,6 +23,10 @@ export default async function AgendaPanel({ organizationId, membershipId, role }
           AND a.starts_at >= ((date_trunc('day', now() AT TIME ZONE 'America/Sao_Paulo')) AT TIME ZONE 'America/Sao_Paulo')
           AND a.starts_at < (((date_trunc('day', now() AT TIME ZONE 'America/Sao_Paulo') + interval '14 days')) AT TIME ZONE 'America/Sao_Paulo')
           AND a.status <> 'cancelled'
+          AND (${role} <> 'professional' OR a.professional_profile_id IN (
+            SELECT p2.id FROM professional_profiles p2
+            WHERE p2.organization_id = ${organizationId} AND p2.membership_id = ${membershipId} AND p2.is_active = true
+          ))
         ORDER BY a.starts_at ASC LIMIT 30`
   ]);
 
